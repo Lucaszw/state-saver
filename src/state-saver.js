@@ -39,28 +39,36 @@ class StateSaverUI extends UIPlugin {
   }
 
   async loadSnapshot(snapshot, e) {
-    const microdrop = new MicrodropAsync();
+    try {
+      this.element.style.opacity = 0.5;
 
-    const msg = {routes: {}, "active-electrodes": []};
-    _.set(msg, "__head__.plugin_name", microdrop.name);
+      const microdrop = new MicrodropAsync();
 
-    // Clear previous routes, and electrodes (incase the haven't been set)
-    await microdrop.putPlugin("routes-model", "routes", msg);
-    await microdrop.putPlugin("electrodes-model", "active-electrodes", msg);
+      const msg = {routes: {}, "active-electrodes": []};
+      _.set(msg, "__head__.plugin_name", microdrop.name);
 
-    for (const [pluginName, props] of Object.entries(snapshot)) {
-      // Script loading schema and device
-      if (pluginName == "schema-model") continue;
-      if (pluginName == "device-model") continue;
-      for (const [k,v] of Object.entries(props)) {
-        _.set(msg, k, v);
+      // Clear previous routes, and electrodes (incase the haven't been set)
+      await microdrop.putPlugin("routes-model", "routes", msg);
+      await microdrop.putPlugin("electrodes-model", "active-electrodes", msg);
 
-        try {
-          await microdrop.putPlugin(pluginName, k, msg, 1000);
-        } catch (e) {
-          console.error(e.toString());
+      for (const [pluginName, props] of Object.entries(snapshot)) {
+        // Skip loading schema and device
+        if (pluginName == "schema-model") continue;
+        if (pluginName == "device-model") continue;
+        for (const [k,v] of Object.entries(props)) {
+          _.set(msg, k, v);
+
+          try {
+            await microdrop.putPlugin(pluginName, k, msg, 1000);
+          } catch (e) {
+            console.error(e.toString());
+          }
         }
       }
+    } catch (e) {
+      console.error(e.toString());
+    } finally {
+      this.element.style.opacity = 1;
     }
   }
 
@@ -81,7 +89,7 @@ class StateSaverUI extends UIPlugin {
           ${ _.map(snapshots, (v,k) => {
             return yo`
               <li>
-                <a onclick=${this.loadSnapshot.bind(this, v)}>${k}</a>
+                <button onclick=${this.loadSnapshot.bind(this, v)}>${k}</button>
               </li>`
             })
           }
