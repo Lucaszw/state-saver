@@ -17,79 +17,82 @@ class StateSaverUI extends UIPlugin {
 
   listen() {
     this.editor = new JSONEditor(this.editorContainer, {});
-    this.bindStateMsg("snapshots", "set-snapshots");
+    this.bindStateMsg("steps", "set-steps");
     this.onStateMsg("{pluginName}", "{val}", this.render.bind(this));
   }
 
-  async takeSnapshot() {
+  async createStep() {
+    console.log("CREATING STEP");
     const microdrop = new MicrodropAsync();
-    let snapshots;
-    // Try and get previous snapshots if they exist
+    let steps;
+    // Try and get previous steps if they exist
     try {
-      snapshots = await microdrop.getState("state-saver-ui", "snapshots", 1000);
-    } catch (e) { snapshots = {};}
+      steps = await microdrop.getState("state-saver-ui", "steps", 1000);
+    } catch (e) { steps = [];}
 
-    // Get the current snapshot from the editor
-    const snapshot = this.editor.get();
-    delete snapshot["state-saver-ui"];
+    // Get the current step from the editor
+    const step = this.editor.get();
+    delete steps["state-saver-ui"];
 
     // Push snapsot and update microdrops state
-    snapshots[generateName()] = snapshot;
-    this.trigger("set-snapshots", snapshots);
+    steps.push(step);
+    this.trigger("set-steps", steps);
   }
 
-  async loadSnapshot(snapshot, e) {
+  async loadStep(step, e) {
+    const header = "__head__.plugin_name";
+    console.log("LOADING STEP");
     try {
       this.element.style.opacity = 0.5;
 
-      const microdrop = new MicrodropAsync();
-
-      const msg = {routes: {}, "active-electrodes": []};
-      _.set(msg, "__head__.plugin_name", microdrop.name);
+      const put = async (pluginName, k, v) => {
+        const microdrop = new MicrodropAsync();
+        const msg = {};
+        _.set(msg, header, microdrop.name);
+        _.set(msg, k, v);
+        await microdrop.putPlugin(pluginName, k, msg);
+      };
 
       // Clear previous routes, and electrodes (incase the haven't been set)
-      await microdrop.putPlugin("routes-model", "routes", msg);
-      await microdrop.putPlugin("electrodes-model", "active-electrodes", msg);
+      await put("routes-model", "routes", {});
+      await put("electrodes-model", "active-electrodes", []);
 
-      for (const [pluginName, props] of Object.entries(snapshot)) {
-        // Skip loading schema and device
+      for (const [pluginName, props] of Object.entries(step)) {
+        // Skip loading schema and state-saver
         if (pluginName == "schema-model") continue;
-        if (pluginName == "device-model") continue;
-        for (const [k,v] of Object.entries(props)) {
-          _.set(msg, k, v);
+        if (pluginName == "state-saver-ui") continue;
 
-          try {
-            await microdrop.putPlugin(pluginName, k, msg, 1000);
-          } catch (e) {
-            console.error(e.toString());
-          }
+        for (const [k,v] of Object.entries(props)) {
+          console.log({pluginName, k, v});
+          await put(pluginName, k, v);
         }
       }
     } catch (e) {
-      console.error(e.toString());
+      console.error(e);
     } finally {
-      this.element.style.opacity = 1;
+      this.element.style.opacity = 1.0;
     }
   }
 
   render(payload, pluginName, val) {
+    console.log("RENDERING");
     if (pluginName == "web-server") return;
     const json = this.json;
     _.set(json, [pluginName, val], payload);
     this.editor.set(json);
 
-    const snapshots = _.get(json, ["state-saver-ui", "snapshots"]) || [];
+    const steps = _.get(json, ["state-saver-ui", "steps"]) || [];
 
     this.element.innerHTML = "";
     this.element.appendChild(yo`
       <div>
-        <button onclick=${this.takeSnapshot.bind(this)}>Take Snapshot</button>
+        <button onclick=${this.createStep.bind(this)}>Create Step</button>
         ${this.editorContainer}
         <ul>
-          ${ _.map(snapshots, (v,k) => {
+          ${ _.map(steps, (v,k) => {
             return yo`
               <li>
-                <button onclick=${this.loadSnapshot.bind(this, v)}>${k}</button>
+                <button onclick=${this.loadStep.bind(this, v)}>${k}</button>
               </li>`
             })
           }
