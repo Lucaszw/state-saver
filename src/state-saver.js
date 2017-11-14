@@ -22,7 +22,6 @@ class StateSaverUI extends UIPlugin {
   }
 
   async createStep() {
-    console.log("CREATING STEP");
     const microdrop = new MicrodropAsync();
     let steps;
     // Try and get previous steps if they exist
@@ -41,7 +40,6 @@ class StateSaverUI extends UIPlugin {
 
   async loadStep(step, e) {
     const header = "__head__.plugin_name";
-    console.log("LOADING STEP");
     try {
       this.element.style.opacity = 0.5;
 
@@ -63,7 +61,6 @@ class StateSaverUI extends UIPlugin {
         if (pluginName == "state-saver-ui") continue;
 
         for (const [k,v] of Object.entries(props)) {
-          console.log({pluginName, k, v});
           await put(pluginName, k, v);
         }
       }
@@ -75,7 +72,6 @@ class StateSaverUI extends UIPlugin {
   }
 
   render(payload, pluginName, val) {
-    console.log("RENDERING");
     if (pluginName == "web-server") return;
     const json = this.json;
     _.set(json, [pluginName, val], payload);
