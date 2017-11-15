@@ -7,11 +7,12 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "./node_modules/.bin/webpack",
     "build-dev": "npm run-script build-microdrop-async && npm run-script link-packages && webpack",
-    "link-packages": "npm ln ../microdrop-async",
+    "link-packages": "npm ln ../microdrop-async ../jsoneditor",
     "build-microdrop-async": "npm run-script --prefix ../microdrop-async build-dev",
     "update-deps": "ncu -ua @microdrop/async @microdrop/device-controller @microdrop/ui-plugin && npm install",
     "git-add": "git add package-lock.json && git add -p . && git commit",
-    "publish-pkg": "npm run build && npm version patch && npm publish && git push origin master"
+    "publish-pkg": "npm run build && npm version patch && npm publish && git push origin master",
+    "build-jsoneditor": "npm run --prefix ../jsoneditor build"
   },
   "keywords": [
     "Microdrop",
@@ -28,9 +29,9 @@
     "webpack": "^3.8.1"
   },
   "dependencies": {
-    "@microdrop/async": "^0.2.18",
+    "@microdrop/async": "^0.2.21",
     "@microdrop/ui-plugin": "^0.1.5",
-    "jsoneditor": "^5.10.1",
+    "jsoneditor": "github:Lucaszw/jsoneditor#master",
     "lodash": "^4.17.4",
     "sillyname": "^0.1.0",
     "yo-yo": "^1.4.1"
