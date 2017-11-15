@@ -8,7 +8,10 @@
     "build": "./node_modules/.bin/webpack",
     "build-dev": "npm run-script build-microdrop-async && npm run-script link-packages && webpack",
     "link-packages": "npm ln ../microdrop-async",
-    "build-microdrop-async": "npm run-script --prefix ../microdrop-async build-dev"
+    "build-microdrop-async": "npm run-script --prefix ../microdrop-async build-dev",
+    "update-deps": "ncu -u @microdrop/async @microdrop/device-controller @microdrop/ui-plugin && npm install",
+    "git-add": "git add package-lock.json && git add -p . && git commit",
+    "publish-pkg": "npm version patch && npm publish && git push origin master"
   },
   "keywords": [
     "Microdrop",
