@@ -11,12 +11,16 @@ class StateSaverUI extends UIPlugin {
   constructor(elem, focusTracker) {
     super(elem, focusTracker, "SateSaverUI");
     this.json = {};
-    this.editor = null;
-    this.editorContainer = yo`<div></div>`;
+    this.element.style.overflow = "auto";
+    this.stateEditorContainer = yo`<div></div>`;
+    this.stepEditorContainer = yo`<div></div>`;
+    this.stateEditor = null;
+    this.stepEditor = null;
   }
 
   listen() {
-    this.editor = new JSONEditor(this.editorContainer, {});
+    this.stateEditor = new JSONEditor(this.stateEditorContainer, {});
+    this.stepEditor = new JSONEditor(this.stepEditorContainer, {});
     this.bindStateMsg("steps", "set-steps");
     this.onStateMsg("{pluginName}", "{val}", this.render.bind(this));
   }
@@ -30,9 +34,8 @@ class StateSaverUI extends UIPlugin {
     } catch (e) { steps = [];}
 
     // Get the current step from the editor
-    const step = this.editor.get();
-    delete steps["state-saver-ui"];
-
+    const step = this.stateEditor.get();
+    delete step["state-saver-ui"];
     // Push snapsot and update microdrops state
     steps.push(step);
     this.trigger("set-steps", steps);
@@ -75,24 +78,14 @@ class StateSaverUI extends UIPlugin {
     if (pluginName == "web-server") return;
     const json = this.json;
     _.set(json, [pluginName, val], payload);
-    this.editor.set(json);
-
-    const steps = _.get(json, ["state-saver-ui", "steps"]) || [];
-
+    this.stateEditor.set(json);
+    this.stepEditor.set(_.get(json, ["state-saver-ui", "steps"]) || []);
     this.element.innerHTML = "";
     this.element.appendChild(yo`
       <div>
         <button onclick=${this.createStep.bind(this)}>Create Step</button>
-        ${this.editorContainer}
-        <ul>
-          ${ _.map(steps, (v,k) => {
-            return yo`
-              <li>
-                <button onclick=${this.loadStep.bind(this, v)}>${k}</button>
-              </li>`
-            })
-          }
-        </ul>
+        ${this.stateEditorContainer}
+        ${this.stepEditorContainer}
       </div>
     `);
   }
