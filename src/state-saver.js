@@ -44,22 +44,27 @@ class StateSaverUI extends UIPlugin {
     this.trigger("set-steps", steps);
   }
 
-  async exec(item) {
+  async exec(item, index) {
     /* Execute routes, then continue to the next step */
-    const index = item.node.index;
+    index = index || item.node.index;
+    await this.loadStep(item, index);
     var microdrop = new MicrodropAsync();
-    await this.loadStep(item);
     var steps = await microdrop.getState("state-saver-ui", "steps");
     var step = steps[index];
     var routes = _.get(step, ["routes-model", "routes"]);
-    microdrop.routes.execute(routes);
+    await microdrop.routes.execute(routes);
+
+    console.log("Step complete", index);
+    index += 1;
+    if (steps[index]) this.exec(item, index);
   }
 
-  async loadStep(item) {
+  async loadStep(item, index) {
     try {
+      index = index || item.node.index;
       var microdrop = new MicrodropAsync();
       var steps = await microdrop.getState("state-saver-ui", "steps");
-      var step = steps[item.node.index];
+      var step = steps[index];
 
       this.element.style.opacity = 0.5;
 
