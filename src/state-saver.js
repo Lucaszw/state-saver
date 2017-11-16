@@ -12,25 +12,28 @@ class StateSaverUI extends UIPlugin {
     super(elem, focusTracker);
     this.json = {};
     _.extend(this.element.style, {
-      overflow: "hidden"
+      overflow: "auto"
     });
-    this.stateEditorContainer = yo`<div style="zoom: 0.8"></div>`;
-    this.stepEditorContainer = yo`<div style="zoom: 0.8; height:100000px"></div>`;
-    this.stateEditor = null;
-    this.stepEditor = null;
+
+    this.view = "top";
+    this.container = yo`<div style="zoom: 0.8; height:1000px"></div>`;
+    const onChange = this.onChange.bind(this);
+    this.editor = new JSONEditor(this.container, {onChange});
   }
 
   listen() {
-    const onChange = this.stepEditorChanged.bind(this);
-    this.stateEditor = new JSONEditor(this.stateEditorContainer);
-    this.stepEditor = new JSONEditor(this.stepEditorContainer, {onChange});
-
     this.bindStateMsg("steps", "set-steps");
     this.onStateMsg("{pluginName}", "{val}", this.render.bind(this));
+    this.draw();
   }
 
-  async stepEditorChanged() {
-    const obj = _.last(this.stepEditor.history.history);
+  onChange() {
+    if (this.view == "steps") this.changeSteps();
+    if (this.view == "route") this.changeRoute();
+  }
+
+  async changeSteps() {
+    const obj = _.last(this.editor.history.history);
     const action = obj.action;
     const index = obj.params.index;
 
@@ -44,6 +47,14 @@ class StateSaverUI extends UIPlugin {
     this.trigger("set-steps", steps);
   }
 
+  async changeRoute() {
+    const obj = _.last(this.editor.history.history);
+    const field = obj.params.node.field;
+    const value = obj.params.node.value;
+    const microdrop = new MicrodropAsync();
+    microdrop.routes.putRoute(this.editor.get());
+  }
+
   async exec(item, index) {
     /* Execute routes, then continue to the next step */
     index = index || item.node.index;
@@ -53,8 +64,6 @@ class StateSaverUI extends UIPlugin {
     var step = steps[index];
     var routes = _.get(step, ["routes-model", "routes"]);
     await microdrop.routes.execute(routes);
-
-    console.log("Step complete", index);
     index += 1;
     if (steps[index]) this.exec(item, index);
   }
@@ -88,6 +97,11 @@ class StateSaverUI extends UIPlugin {
     }
   }
 
+  changeView(e) {
+    this.view  = e.target.value;
+    this.render();
+  }
+
   async createStep() {
     const microdrop = new MicrodropAsync();
     let steps;
@@ -97,7 +111,7 @@ class StateSaverUI extends UIPlugin {
     } catch (e) { steps = [];}
 
     // Get the current step from the editor
-    const step = this.stateEditor.get();
+    const step = this.editor.get();
     delete step["state-saver-ui"];
     // Push snapsot and update microdrops state
     steps.push(step);
@@ -106,25 +120,84 @@ class StateSaverUI extends UIPlugin {
 
   render(payload, pluginName, val) {
     if (pluginName == "web-server") return;
-    const json = this.json;
-    const loadStep = { text: "Load Step", click: this.loadStep.bind(this) };
-    const execStep = { text: "Run", click: this.exec.bind(this) };
+    if (payload) _.set(this.json, [pluginName, val], payload);
 
-    _.set(json, [pluginName, val], payload);
-    this.stateEditor.set(json);
-    this.stepEditor.set(_.get(json, ["state-saver-ui", "steps"]) || []);
+    if (this.view == "top")  this.renderTopView();
+    if (this.view == "steps") this.renderStepView();
+    if (this.view == "electrode") this.renderSelectedElectrode();
+    if (this.view == "route") this.renderSelectedRoute();
+  }
 
-    this.stepEditor.node.items = [loadStep, execStep];
+  draw() {
+    const name = `radios-${generateName()}`;
 
     this.element.innerHTML = "";
     this.element.appendChild(yo`
       <div>
+        <div>
+           <input onclick=${this.changeView.bind(this)}
+             name="${name}" type="radio" value="top" checked>
+           <label>Top</label>
+
+           <input onclick=${this.changeView.bind(this)}
+             name="${name}" type="radio" value="steps">
+           <label>Steps</label>
+
+           <input onclick=${this.changeView.bind(this)}
+             name="${name}" type="radio" value="electrode">
+           <label>Selected Electrode</label>
+
+           <input onclick=${this.changeView.bind(this)}
+             name="${name}" type="radio" value="route">
+           <label>Selected Route</label>
+
+         </div>
+
         <button onclick=${this.createStep.bind(this)}>Create Step</button>
-        ${this.stateEditorContainer}
-        ${this.stepEditorContainer}
+        ${this.container}
       </div>
     `);
   }
+
+  renderTopView() {
+    this.editor.set(this.json);
+  }
+
+  renderStepView() {
+    const loadStep = { text: "Load Step", click: this.loadStep.bind(this) };
+    const execStep = { text: "Run", click: this.exec.bind(this) };
+    this.editor.set(_.get(this.json, ["state-saver-ui", "steps"]) || []);
+    this.editor.node.items = [loadStep, execStep];
+  }
+
+  async renderSelectedElectrode() {
+    const LABEL = "StateSaver::renderSelectedElectrode";
+    try {
+      const microdrop = new MicrodropAsync();
+      let id = await microdrop.getState("electrode-controls", "selected-electrode", 500);
+
+      const electrodes = _.get(this.json, ["device-model", "three-object"]) || [];
+      this.editor.set(_.find(electrodes, { id }));
+
+    } catch (e) {
+      console.error(LABEL, e);
+    }
+  }
+
+  async renderSelectedRoute() {
+    const LABEL = "StateSaver::renderSelectedRoute";
+    try {
+      const microdrop = new MicrodropAsync();
+      let uuid = await microdrop.getState("route-controls", "selected-route", 500);
+
+      const routes = _.get(this.json, ["routes-model", "routes"]) || [];
+      this.editor.set(_.find(routes, { uuid }));
+
+    } catch (e) {
+      console.error(LABEL, e);
+    }
+  }
+
 }
 
 async function put(pluginName, k, v) {

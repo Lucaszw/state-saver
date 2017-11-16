@@ -5,14 +5,16 @@
   "main": "src/state-saver.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "dev-mode": "npm run uninstall-pkgs && npm i ../microdrop-async ../ui-plugin ../jsoneditor",
+    "prod-mode": "npm run uninstall-pkgs && npm i @microdrop/async @microdrop/ui-plugin Lucaszw/jsoneditor#master",
     "build": "./node_modules/.bin/webpack",
-    "build-dev": "npm run-script build-microdrop-async && npm run-script link-packages && webpack",
-    "link-packages": "npm ln ../microdrop-async ../jsoneditor",
+    "build-dev": "npm run build-microdrop-async && npm run build-jsoneditor && webpack",
     "build-microdrop-async": "npm run-script --prefix ../microdrop-async build-dev",
+    "build-jsoneditor": "npm run --prefix ../jsoneditor build",
     "update-deps": "ncu -ua @microdrop/async @microdrop/device-controller @microdrop/ui-plugin && npm install",
     "git-add": "git add package-lock.json && git add -p . && git commit",
-    "publish-pkg": "npm run build && npm version patch && npm publish && git push origin master",
-    "build-jsoneditor": "npm run --prefix ../jsoneditor build"
+    "uninstall-pkgs": "npm uninstall @microdrop/async @microdrop/ui-plugin jsoneditor",
+    "publish-pkg": "npm run prod-mode && npm run build && npm version patch && npm publish && git push origin master"
   },
   "keywords": [
     "Microdrop",
@@ -29,8 +31,8 @@
     "webpack": "^3.8.1"
   },
   "dependencies": {
-    "@microdrop/async": "^0.2.22",
-    "@microdrop/ui-plugin": "^0.1.5",
+    "@microdrop/async": "^0.2.23",
+    "@microdrop/ui-plugin": "^0.1.7",
     "jsoneditor": "github:Lucaszw/jsoneditor#master",
     "lodash": "^4.17.4",
     "sillyname": "^0.1.0",
