@@ -4,7 +4,7 @@ const generateName = require('sillyname');
 const yo = require('yo-yo');
 const _ = require('lodash');
 
-const MicrodropAsync = require('@microdrop/async');
+const MicrodropAsync = require('@microdrop/async/MicrodropAsync');
 const UIPlugin = require('@microdrop/ui-plugin');
 
 class StateSaverUI extends UIPlugin {
@@ -21,7 +21,7 @@ class StateSaverUI extends UIPlugin {
     this.editor = new JSONEditor(this.container, {onChange});
   }
 
-  listen() {
+  async listen() {
     this.bindStateMsg("steps", "set-steps");
     this.onStateMsg("{pluginName}", "{val}", this.render.bind(this));
     this.draw();
@@ -49,45 +49,48 @@ class StateSaverUI extends UIPlugin {
 
   async changeRoute() {
     const obj = _.last(this.editor.history.history);
-    const field = obj.params.node.field;
-    const value = obj.params.node.value;
     const microdrop = new MicrodropAsync();
     microdrop.routes.putRoute(this.editor.get());
   }
 
-  async exec(item, index) {
+  async exec(item, steps, index) {
     /* Execute routes, then continue to the next step */
     index = index || item.node.index;
-    await this.loadStep(item, index);
     var microdrop = new MicrodropAsync();
-    var steps = await microdrop.getState("state-saver-ui", "steps");
+    steps = steps || await microdrop.getState("state-saver-ui", "steps");
+    await this.loadStep(item, index, steps);
     var step = steps[index];
     var routes = _.get(step, ["routes-model", "routes"]);
-    await microdrop.routes.execute(routes);
+    if (routes) await microdrop.routes.execute(routes, -1);
     index += 1;
-    if (steps[index]) this.exec(item, index);
+    if (steps[index]) this.exec(item, steps, index);
   }
 
-  async loadStep(item, index) {
+  async loadStep(item, index, steps) {
     try {
       index = index || item.node.index;
       var microdrop = new MicrodropAsync();
-      var steps = await microdrop.getState("state-saver-ui", "steps");
+      steps = steps || await microdrop.getState("state-saver-ui", "steps");
       var step = steps[index];
 
       this.element.style.opacity = 0.5;
 
       // Clear previous routes, and electrodes (incase the haven't been set)
-      await put("routes-model", "routes", []);
-      await put("electrodes-model", "active-electrodes", []);
+      await put("routes-model", "routes", [], 500);
+      await put("electrodes-model", "active-electrodes", [], 500);
 
       for (const [pluginName, props] of Object.entries(step)) {
-        if (pluginName == "schema-model") continue;
-        if (pluginName == "state-saver-ui") continue;
-        if (pluginName == "device-model") continue;
+        const subs = await microdrop.getSubscriptions(pluginName);
 
         for (const [k,v] of Object.entries(props)) {
-          await put(pluginName, k, v);
+          try {
+            // Get the subscriptions for the pluginName
+            if (_.includes(subs, `microdrop/put/${pluginName}/${k}`)) {
+              await put(pluginName, k, v, 500);
+            }
+          } catch (e) {
+            console.error(e, {pluginName, k, v});
+          }
         }
       }
     } catch (e) {
@@ -111,8 +114,13 @@ class StateSaverUI extends UIPlugin {
     } catch (e) { steps = [];}
 
     // Get the current step from the editor
-    const step = this.editor.get();
-    delete step["state-saver-ui"];
+    const json = _.clone(this.json);
+
+    const step = {
+      "routes-model": json["routes-model"],
+      "electrodes-model": json["electrodes-model"]
+    };
+
     // Push snapsot and update microdrops state
     steps.push(step);
     this.trigger("set-steps", steps);
@@ -122,7 +130,7 @@ class StateSaverUI extends UIPlugin {
     if (pluginName == "web-server") return;
     if (payload) _.set(this.json, [pluginName, val], payload);
 
-    if (this.view == "top")  this.renderTopView();
+    if (this.view == "top") this.renderTopView();
     if (this.view == "steps") this.renderStepView();
     if (this.view == "electrode") this.renderSelectedElectrode();
     if (this.view == "route") this.renderSelectedRoute();
@@ -153,7 +161,8 @@ class StateSaverUI extends UIPlugin {
 
          </div>
 
-        <button onclick=${this.createStep.bind(this)}>Create Step</button>
+        <button onclick=${this.createStep.bind(this)}
+        >Create Step</button>
         ${this.container}
       </div>
     `);
