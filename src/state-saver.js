@@ -1,4 +1,4 @@
-require('!style-loader!css-loader!jsoneditor/dist/jsoneditor.min.css');
+require('!style-loader!css-loader!jsoneditor/src/css/index.css');
 const JSONEditor = require('jsoneditor');
 const generateName = require('sillyname');
 const yo = require('yo-yo');
