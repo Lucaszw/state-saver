@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@microdrop/async": "^0.2.26",
-    "@microdrop/buildutils": "0.0.5",
+    "@microdrop/buildutils": "0.0.6",
     "@microdrop/ui-plugin": "^0.1.9",
     "jsoneditor": "github:Lucaszw/jsoneditor#master",
     "lodash": "^4.17.4",
