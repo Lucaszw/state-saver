@@ -15,7 +15,6 @@
   "author": "",
   "license": "BSD-2-Clause",
   "devDependencies": {
-    "@microdrop/buildutils": "0.0.2",
     "css-loader": "^0.28.7",
     "gulp": "^3.9.1",
     "style-loader": "^0.19.0",
@@ -24,6 +23,7 @@
   },
   "dependencies": {
     "@microdrop/async": "^0.2.26",
+    "@microdrop/buildutils": "0.0.5",
     "@microdrop/ui-plugin": "^0.1.9",
     "jsoneditor": "github:Lucaszw/jsoneditor#master",
     "lodash": "^4.17.4",
