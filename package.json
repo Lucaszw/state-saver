@@ -22,7 +22,7 @@
     "webpack": "^3.8.1"
   },
   "dependencies": {
-    "@microdrop/async": "^0.2.26",
+    "@microdrop/async": "^0.2.31",
     "@microdrop/buildutils": "0.0.12",
     "@microdrop/ui-plugin": "^0.1.9",
     "jsoneditor": "github:Lucaszw/jsoneditor#master",
