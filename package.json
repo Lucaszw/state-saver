@@ -1,6 +1,6 @@
 {
   "name": "@microdrop/state-saver",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "Save and restore the state of microdrop",
   "main": "src/state-saver.js",
   "scripts": {
