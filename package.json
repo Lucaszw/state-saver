@@ -22,8 +22,8 @@
     "webpack": "^3.8.1"
   },
   "dependencies": {
-    "@microdrop/async": "^0.2.26",
-    "@microdrop/buildutils": "0.0.6",
+    "@microdrop/async": "^0.2.31",
+    "@microdrop/buildutils": "0.0.15",
     "@microdrop/ui-plugin": "^0.1.9",
     "jsoneditor": "github:Lucaszw/jsoneditor#master",
     "lodash": "^4.17.4",
