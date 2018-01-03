@@ -85071,7 +85071,7 @@ class Routes {
       const validate = ajv.compile(this.RouteSchema);
       if (!validate(routes[0])) throw(validate.errors);
 
-      lo.set(msg, "__head_lo.plugin_name", this.ms.name);
+      lo.set(msg, "__head_.plugin_name", this.ms.name);
       lo.set(msg, "routes", routes);
 
       const d = await this.ms.triggerPlugin("routes-model", "execute", msg, timeout);
